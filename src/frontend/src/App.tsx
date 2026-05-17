@@ -467,22 +467,30 @@ function AuthScreen({
           <h1>{mode === "login" ? "登录工作台" : "创建团队空间"}</h1>
           <label>
             邮箱
-            <input type="email" required placeholder="security@example.com" />
+            <input id="email" name="email" type="email" required autoComplete="email" placeholder="security@example.com" />
           </label>
           {mode === "register" && (
             <label>
               组织名称
-              <input type="text" required placeholder="Protocol Security Lab" />
+              <input id="organization" name="organization" type="text" required autoComplete="organization" placeholder="Protocol Security Lab" />
             </label>
           )}
           <label>
             密码
-            <input type="password" required minLength={6} placeholder="输入访问密码" />
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              minLength={6}
+              autoComplete={mode === "login" ? "current-password" : "new-password"}
+              placeholder="输入访问密码"
+            />
           </label>
           {mode === "register" && (
             <label>
               邀请码
-              <input type="text" required placeholder="RAGFLOW-TEAM" />
+              <input id="invite-code" name="invite-code" type="text" required autoComplete="off" placeholder="RAGFLOW-TEAM" />
             </label>
           )}
           <button className="primary-button full" type="submit">
@@ -568,13 +576,26 @@ function Workbench({
                 <b>上传合约材料</b>
                 <span>{allowedFileTypes.join(" / ")}</span>
               </button>
-              <input ref={fileRef} type="file" accept={allowedFileTypes.join(",")} onChange={onFileChange} hidden />
+              <input
+                ref={fileRef}
+                id="contract-file"
+                name="contract-file"
+                type="file"
+                accept={allowedFileTypes.join(",")}
+                onChange={onFileChange}
+                hidden
+              />
             </>
           ) : inputMode === "sample" ? (
             <>
               <label>
                 样本
-                <select value={selectedSample} onChange={(event) => setSelectedSample(event.target.value)}>
+                <select
+                  id="sample-selector"
+                  name="sample-selector"
+                  value={selectedSample}
+                  onChange={(event) => setSelectedSample(event.target.value)}
+                >
                   {librarySamples.map((sample) => (
                     <option key={sample.tx} value={sample.tx}>
                       {sample.protocol} / {sample.type}
@@ -592,6 +613,8 @@ function Workbench({
               <label>
                 {inputMode === "tx" ? "交易哈希" : "合约地址"}
                 <input
+                  id="analysis-query"
+                  name="analysis-query"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder={inputMode === "tx" ? "0x + 64 位十六进制" : "0x + 40 位十六进制"}
