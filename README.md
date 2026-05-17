@@ -1,21 +1,15 @@
 # 御链先知
 
-大模型驱动的跨模态语义增强智能合约攻击检测系统。当前目录独立管理本作品的代码、数据、模型、前端展示、材料和最终提交物。
+大模型驱动的跨模态语义增强智能合约攻击检测系统。
 
-## 目录
+## Scope
 
-```text
-docs/       # 项目简介、研究报告、查新报告、报名表、提交清单
-src/        # 作品代码
-data/       # 原始数据与处理后数据
-models/     # 模型权重、模型卡、导出产物
-experiments/# 实验记录、指标、对照结果
-assets/     # 图片、图表、Logo、PPT素材
-showcase/   # 作品主页、视频脚本、部署说明
-submission/ # 最终提交材料
-env/        # 环境变量示例
-```
+- Smart contract attack analysis.
+- Transaction hash and contract behavior inspection.
+- Function call flow parsing.
+- Semantic retrieval and RAG-based risk reasoning.
+- Risk report generation for audit workflows.
 
-## 当前材料
+## Status
 
-- `submission/【项目报告】御链先知.pdf`
+Frontend implementation is managed in later product iterations.

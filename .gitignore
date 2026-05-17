@@ -7,3 +7,11 @@ build/
 !.env.example
 !**/.env.example
 *.tsbuildinfo
+assets/
+data/
+docs/
+env/
+experiments/
+models/
+showcase/
+submission/
