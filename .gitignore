@@ -7,6 +7,8 @@ build/
 !.env.example
 !**/.env.example
 *.tsbuildinfo
+src/frontend/*.log
+src/frontend/*.png
 assets/
 data/
 docs/
