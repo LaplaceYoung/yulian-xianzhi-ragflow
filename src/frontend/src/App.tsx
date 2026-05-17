@@ -106,6 +106,96 @@ function MetricNumber({ value, suffix = "" }: { value: string | number; suffix?:
   );
 }
 
+function SignalBars({ items }: { items: Array<{ label: string; value: number; tone?: string }> }) {
+  return (
+    <div className="signal-bars">
+      {items.map((item) => (
+        <div key={item.label}>
+          <span>{item.label}</span>
+          <b>{item.value.toFixed(item.value > 10 ? 1 : 3)}</b>
+          <i style={{ "--value": `${Math.min(100, item.value > 10 ? item.value : item.value * 100)}%` } as React.CSSProperties} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TraceFacts({ result }: { result: AnalysisResult }) {
+  return (
+    <div className="trace-facts">
+      <div>
+        <span>Block</span>
+        <b>{result.blockHeight}</b>
+      </div>
+      <div>
+        <span>Trace</span>
+        <b>{result.traceId}</b>
+      </div>
+      <div>
+        <span>Topics</span>
+        <b>{result.logTopics.length}</b>
+      </div>
+      <div>
+        <span>Slots</span>
+        <b>{result.storageSlots.length}</b>
+      </div>
+    </div>
+  );
+}
+
+function FundPath({ result }: { result: AnalysisResult }) {
+  return (
+    <div className="fund-path" aria-label="资金路径">
+      {result.fundPath.map((item, index) => (
+        <span key={`${item}-${index}`}>
+          <b>{item}</b>
+          {index < result.fundPath.length - 1 && <i />}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function StageLogPanel({ result, stageIndex }: { result: AnalysisResult | null; stageIndex: number }) {
+  const visibleStages = stages.slice(0, Math.max(1, stageIndex + 1));
+  return (
+    <div className="stage-log-panel">
+      {result ? (
+        visibleStages.slice(-3).map((stage) => (
+          <div key={stage.id}>
+            <b>{stage.label}</b>
+            {(result.stageLogs[stage.id] ?? []).map((line) => (
+              <span key={line}>{line}</span>
+            ))}
+          </div>
+        ))
+      ) : (
+        <>
+          <div>
+            <b>等待任务</b>
+            <span>trace queue idle</span>
+            <span>vector index ready</span>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function TopHitsMini({ result }: { result: AnalysisResult }) {
+  return (
+    <div className="top-hits-mini">
+      {result.hits.map((hit, index) => (
+        <div key={hit.name}>
+          <span>R{index + 1}</span>
+          <b>{hit.name}</b>
+          <i style={{ "--value": `${hit.similarity * 100}%` } as React.CSSProperties} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function App() {
   const [shell, setShell] = useState<Shell>("home");
   const [authMode, setAuthMode] = useState<AuthMode>("login");
@@ -353,19 +443,52 @@ function Home({ onEnter, onOpenSystem }: { onEnter: () => void; onOpenSystem: ()
         </div>
 
         <div className="hero-visual reveal delay-1" aria-label="系统核心流程">
-          <div className="orbit-panel">
-            {["交易", "调用", "语义", "检索", "报告"].map((item, index) => (
-              <span key={item} className={`orbit-node node-${index + 1}`}>
-                {item}
-              </span>
-            ))}
-            <div className="orbit-core">
-              <ShieldCheck size={30} />
-              <b>RAGFlow</b>
-              <small>93.6% Accuracy</small>
+          <div className="investigation-board">
+            <div className="board-header">
+              <span>TX 0xb7e1...9a42</span>
+              <b>Attack Trace Room</b>
+              <small>block 19082431</small>
+            </div>
+            <div className="board-flow">
+              {["交易进入", "Trace 净化", "语义召回", "证据拼装", "报告输出"].map((item, index) => (
+                <span key={item} className={`board-node board-node-${index + 1}`}>
+                  {item}
+                </span>
+              ))}
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                <path d="M 10 52 C 25 18, 43 18, 50 48 S 78 84, 90 44" />
+                <path className="fund-line" d="M 11 68 C 32 82, 52 22, 87 70" />
+              </svg>
+              <div className="engine-block">
+                <ShieldCheck size={28} />
+                <b>RAGFlow</b>
+                <small>semantic + trace + evidence</small>
+              </div>
+            </div>
+            <div className="board-docket">
+              {["reentry", "flashloan", "oracle", "bridge"].map((item, index) => (
+                <span key={item}>
+                  <i>{String(index + 1).padStart(2, "0")}</i>
+                  {item}
+                </span>
+              ))}
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="threat-strip reveal delay-2">
+        {[
+          ["56 亿美元", "链上安全损失样本池"],
+          ["184k", "攻击路径索引"],
+          ["2,500 call/s", "净化吞吐量"],
+          ["89.2%", "业务调用占比"],
+        ].map(([value, label]) => (
+          <div key={label}>
+            <b>{value}</b>
+            <span>{label}</span>
+          </div>
+        ))}
       </section>
 
       <section className="metric-strip reveal delay-2" id="metrics">
@@ -385,6 +508,19 @@ function Home({ onEnter, onOpenSystem }: { onEnter: () => void; onOpenSystem: ()
           <MetricNumber value="6.8" suffix="s" />
           <span>平均时延</span>
         </div>
+      </section>
+
+      <section className="home-section method-snapshot">
+        <div>
+          <p className="eyebrow">方法指标</p>
+          <h2>RAGFlow 在准确率、召回率与 F1 上保持领先</h2>
+        </div>
+        <SignalBars
+          items={methodMetrics.map((item) => ({
+            label: item.method,
+            value: item.f1,
+          }))}
+        />
       </section>
 
       <section className="home-section two-column" id="route">
@@ -634,6 +770,12 @@ function Workbench({
           <span>合约地址：42 字符</span>
           <span>文件：Solidity / JSON / Log</span>
         </div>
+        {result && (
+          <div className="input-intel">
+            <b>检索命中</b>
+            <TopHitsMini result={result} />
+          </div>
+        )}
       </section>
 
       <section className="panel process-panel">
@@ -658,6 +800,7 @@ function Workbench({
             );
           })}
         </div>
+        <StageLogPanel result={result} stageIndex={stageIndex} />
       </section>
 
       <section className="panel result-panel">
@@ -697,6 +840,11 @@ function Workbench({
               <button onClick={() => onOpenNav("调用链")}>调用链</button>
               <button onClick={() => onOpenNav("语义检索")}>证据</button>
               <button onClick={() => onOpenNav("风险报告")}>报告</button>
+            </div>
+            <div className="risk-meta">
+              <span>rule: {result.vulnerability}</span>
+              <span>queue: {result.risk === "高" ? "P0" : result.risk === "中" ? "P1" : "P2"}</span>
+              <span>trace: {result.traceId}</span>
             </div>
           </div>
         ) : (
@@ -741,6 +889,8 @@ function Workbench({
                 </p>
               ))}
             </div>
+            <TraceFacts result={result} />
+            <FundPath result={result} />
           </div>
         ) : (
           <div className="skeleton-list">
@@ -781,6 +931,7 @@ function CallChain({ result, stageIndex }: { result: AnalysisResult | null; stag
                 <small>{node.kind}</small>
                 <b>{node.label}</b>
                 <span>depth {node.depth}</span>
+                <em>{node.label}(bytes calldata, slot[{node.depth + 7}])</em>
               </button>
             ))}
             <svg className="edge-layer" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -789,9 +940,20 @@ function CallChain({ result, stageIndex }: { result: AnalysisResult | null; stag
                 const x2 = 8 + (index + 1) * (82 / Math.max(1, result.nodes.length - 1));
                 const y1 = index % 2 === 0 ? 32 : 66;
                 const y2 = (index + 1) % 2 === 0 ? 32 : 66;
-                return <path key={node.id} d={`M ${x1} ${y1} C ${(x1 + x2) / 2} ${y1}, ${(x1 + x2) / 2} ${y2}, ${x2} ${y2}`} />;
+                return (
+                  <path
+                    key={node.id}
+                    className={index % 2 === 0 ? "call-edge" : "fund-edge"}
+                    d={`M ${x1} ${y1} C ${(x1 + x2) / 2} ${y1}, ${(x1 + x2) / 2} ${y2}, ${x2} ${y2}`}
+                  />
+                );
               })}
             </svg>
+            <div className="graph-legend">
+              <span><i className="call-edge-dot" />调用边</span>
+              <span><i className="fund-edge-dot" />资金边</span>
+              <span><i className="risk-edge-dot" />风险节点</span>
+            </div>
           </div>
         ) : (
           <EmptyState icon={Network} title="暂无调用链" text="提交分析后显示合约、函数、事件与资金路径节点。" />
@@ -822,15 +984,22 @@ function CallChain({ result, stageIndex }: { result: AnalysisResult | null; stag
       <section className="panel">
         <div className="panel-title">
           <Fingerprint size={18} />
-          <h2>节点详情</h2>
+          <h2>Trace Tree</h2>
         </div>
         {result ? (
           <div className="node-table">
             {result.nodes.map((node) => (
               <div key={node.id}>
                 <b>{node.label}</b>
-                <span>{node.kind}</span>
+                <span>{node.kind} / depth {node.depth}</span>
                 <em>{node.risk}</em>
+              </div>
+            ))}
+            {result.storageSlots.map((slot) => (
+              <div key={slot}>
+                <b>{slot}</b>
+                <span>storage diff</span>
+                <em>slot</em>
               </div>
             ))}
           </div>
@@ -858,18 +1027,29 @@ function SemanticRetrieval({ result }: { result: AnalysisResult | null }) {
           <h2>Top-k 证据</h2>
         </div>
         {result ? (
-          <div className="hit-list">
-            {result.hits.map((hit) => (
+          <>
+            <div className="vector-summary">
+              {result.vectorSummary.map((item) => (
+                <div key={item.label}>
+                  <span>{item.label}</span>
+                  <b>{item.value}</b>
+                </div>
+              ))}
+            </div>
+            <div className="hit-list">
+            {result.hits.map((hit, index) => (
               <article key={hit.name}>
                 <div>
-                  <b>{hit.name}</b>
+                  <b><span>E{index + 1}</span>{hit.name}</b>
                   <small>{hit.source} / {hit.vulnerability}</small>
                 </div>
                 <MetricNumber value={(hit.similarity * 100).toFixed(1)} suffix="%" />
+                <i style={{ "--value": `${hit.similarity * 100}%` } as React.CSSProperties} />
                 <p>{hit.evidence}</p>
               </article>
             ))}
-          </div>
+            </div>
+          </>
         ) : (
           <EmptyState icon={Database} title="暂无检索结果" text="分析完成后显示相似攻击路径、来源和证据片段。" />
         )}
@@ -904,16 +1084,23 @@ function SemanticRetrieval({ result }: { result: AnalysisResult | null }) {
           <h2>语义对齐矩阵</h2>
         </div>
         {matrixData ? (
-          <div className="matrix-grid">
-            {matrixData.map((cell) => (
-              <span
-                key={`${cell.row}-${cell.column}`}
-                style={{ opacity: 0.25 + cell.value * 0.75 }}
-                title={`${cell.value}`}
-              >
-                {cell.value.toFixed(2)}
-              </span>
-            ))}
+          <div className="matrix-wrap">
+            <div className="matrix-axis">
+              {["Dynamic", "Function", "State", "Event", "Pattern"].map((label) => (
+                <b key={label}>{label}</b>
+              ))}
+            </div>
+            <div className="matrix-grid">
+              {matrixData.map((cell) => (
+                <span
+                  key={`${cell.row}-${cell.column}`}
+                  style={{ opacity: 0.25 + cell.value * 0.75 }}
+                  title={`${cell.value}`}
+                >
+                  {cell.value.toFixed(2)}
+                </span>
+              ))}
+            </div>
           </div>
         ) : (
           <EmptyState icon={Radar} title="暂无矩阵" text="静态语义与动态行为对齐后生成矩阵。" />
@@ -947,6 +1134,11 @@ function RiskReport({ result }: { result: AnalysisResult | null }) {
                 </div>
               ))}
             </div>
+            <div className="report-footer">
+              <span>复核队列 {result.risk === "高" ? "P0" : result.risk === "中" ? "P1" : "P2"}</span>
+              <span>证据覆盖 {result.evidenceCoverage.toFixed(1)}%</span>
+              <span>附件状态 ready</span>
+            </div>
           </>
         ) : (
           <EmptyState icon={FileText} title="暂无报告" text="完成分析后生成风险等级、攻击路径、证据来源与处置建议。" />
@@ -960,10 +1152,16 @@ function RiskReport({ result }: { result: AnalysisResult | null }) {
         </div>
         {result ? (
           <div className="evidence-list">
-            {result.evidence.map((item) => (
+            {result.evidence.map((item, index) => (
               <p key={item}>
-                <ChevronRight size={14} />
+                <b>E{index + 1}</b>
                 {item}
+              </p>
+            ))}
+            {result.logTopics.map((topic, index) => (
+              <p key={topic}>
+                <b>L{index + 1}</b>
+                {topic}
               </p>
             ))}
           </div>
@@ -989,6 +1187,10 @@ function RiskReport({ result }: { result: AnalysisResult | null }) {
                 {item}
               </button>
             ))}
+            <button>
+              <Download size={15} />
+              生成审计附件
+            </button>
           </div>
         ) : (
           <div className="skeleton-list">
@@ -1047,16 +1249,18 @@ function MetricsPage({ result }: { result: AnalysisResult | null }) {
           <BarChart3 size={18} />
           <h2>方法对比</h2>
         </div>
-        <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={methodMetrics}>
-            <CartesianGrid stroke="#e7dfd1" vertical={false} />
-            <XAxis dataKey="method" tickLine={false} axisLine={false} />
-            <YAxis tickLine={false} axisLine={false} domain={[70, 100]} />
-            <Tooltip />
-            <Bar dataKey="accuracy" name="准确率" fill="#1f6f61" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="recall" name="召回率" fill="#9b6f42" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="ranked-metrics">
+          <SignalBars items={[...methodMetrics].sort((a, b) => b.f1 - a.f1).map((item) => ({ label: item.method, value: item.f1 }))} />
+          <ResponsiveContainer width="100%" height={210}>
+            <BarChart data={methodMetrics} layout="vertical" margin={{ left: 18, right: 8 }}>
+              <CartesianGrid stroke="#d8cbb7" horizontal={false} />
+              <XAxis type="number" tickLine={false} axisLine={false} />
+              <YAxis dataKey="method" type="category" width={76} tickLine={false} axisLine={false} />
+              <Tooltip />
+              <Bar dataKey="accuracy" name="准确率" fill="#15483f" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </section>
 
       <section className="panel">
@@ -1093,6 +1297,14 @@ function MetricsPage({ result }: { result: AnalysisResult | null }) {
           <Layers3 size={18} />
           <h2>日志净化</h2>
         </div>
+        <div className="delta-row">
+          {purificationMetrics.map((item) => (
+            <span key={item.name}>
+              {item.name}
+              <b>{Number(item.after - item.before).toFixed(1)}</b>
+            </span>
+          ))}
+        </div>
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={purificationMetrics}>
             <CartesianGrid stroke="#e7dfd1" vertical={false} />
@@ -1109,6 +1321,11 @@ function MetricsPage({ result }: { result: AnalysisResult | null }) {
         <div className="panel-title">
           <Link2 size={18} />
           <h2>平台分布</h2>
+        </div>
+        <div className="chain-recall">
+          <span>Ethereum recall 96.4%</span>
+          <span>BSC recall 94.8%</span>
+          <span>Polygon recall 92.7%</span>
         </div>
         <ResponsiveContainer width="100%" height={220}>
           <PieChart>

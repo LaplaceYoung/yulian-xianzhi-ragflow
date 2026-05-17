@@ -42,6 +42,13 @@ export type AnalysisResult = {
   txHash: string;
   contract: string;
   createdAt: string;
+  blockHeight: number;
+  traceId: string;
+  logTopics: string[];
+  storageSlots: string[];
+  fundPath: string[];
+  stageLogs: Record<string, string[]>;
+  vectorSummary: Array<{ label: string; value: string }>;
   nodes: AttackNode[];
   edges: Array<[string, string]>;
   hits: RetrievalHit[];
@@ -212,6 +219,8 @@ const attackCases = [
   },
 ];
 
+const nodeKinds = ["EOA", "Proxy", "DEX", "Oracle", "Bridge", "Token", "Attacker"];
+
 const recommendationsByRisk: Record<RiskLevel, string[]> = {
   高: ["暂停相关合约交互", "隔离外部调用路径", "补充重入与权限边界审计", "复核同源交易批次"],
   中: ["增加状态校验", "限制高风险函数调用频率", "补充事件日志监控", "人工复核相似样本"],
@@ -248,7 +257,7 @@ export function createAnalysisResult(inputKind: AnalysisInputKind, inputLabel: s
   const nodes: AttackNode[] = base.flow.map((label, index) => ({
     id: `n${index + 1}`,
     label,
-    kind: index === 0 ? "入口" : index === base.flow.length - 1 ? "资金出口" : "调用",
+    kind: pick(nodeKinds, seed + index * 5),
     depth: index + 1,
     risk: index > 1 && index < base.flow.length - 1 ? risk : "中",
   }));
@@ -300,6 +309,67 @@ export function createAnalysisResult(inputKind: AnalysisInputKind, inputLabel: s
       hour: "2-digit",
       minute: "2-digit",
     }).format(new Date()),
+    blockHeight: 18260000 + (seed % 920000),
+    traceId: `trace-${(seed % 9000) + 1000}-${(seed * 17) % 997}`,
+    logTopics: [
+      `0xddf252ad:${pseudoHash(seed + 11, 8)}`,
+      `0x8c5be1e5:${pseudoHash(seed + 17, 8)}`,
+      `0x${pseudoHash(seed + 23, 16).slice(2)}`,
+    ],
+    storageSlots: [
+      `slot[${(seed % 12) + 1}] -> ${pseudoHash(seed + 29, 12)}`,
+      `slot[${(seed % 19) + 8}] -> ${pseudoHash(seed + 31, 12)}`,
+      `slot[${(seed % 31) + 16}] -> ${pseudoHash(seed + 37, 12)}`,
+    ],
+    fundPath: [
+      "EOA",
+      base.protocol.includes("Uniswap") ? "Router" : base.protocol.includes("Bridge") ? "Relay" : "Proxy",
+      base.protocol,
+      risk === "高" ? "Attacker" : "Review Wallet",
+    ],
+    stageLogs: {
+      collect: [
+        `block ${18260000 + (seed % 920000)} 已同步`,
+        `event logs ${18 + (seed % 42)} 条`,
+        `state diff ${4 + (seed % 11)} 组`,
+      ],
+      trace: [
+        `trace depth ${base.flow.length + 3}`,
+        `internal calls ${24 + (seed % 36)} 条`,
+        `external callback ${seed % 3 === 0 ? "命中" : "低频"}`,
+      ],
+      compress: [
+        `clone fold ${12 + (seed % 26)} 个`,
+        `subtree merge ${5 + (seed % 9)} 组`,
+        `noise prune ${(28 + (seed % 33)).toFixed(0)}%`,
+      ],
+      semantic: [
+        `state vars ${7 + (seed % 13)} 个`,
+        `function roles ${base.flow.length} 类`,
+        `guard pattern ${seed % 2 === 0 ? "partial" : "strict"}`,
+      ],
+      retrieve: [
+        `top-k hit ${hits.length}`,
+        `vector latency ${(0.18 + (seed % 30) / 100).toFixed(2)}s`,
+        `case cluster ${pick(["flashloan", "reentry", "bridge", "oracle"], seed)}`,
+      ],
+      prompt: [
+        `context window ${24 + (seed % 8)}k`,
+        `evidence refs ${6 + (seed % 8)}`,
+        `static supplement ${Math.round(evidenceCoverage)}%`,
+      ],
+      verdict: [
+        `risk score ${Math.round(confidence)}`,
+        `coverage ${Math.round(evidenceCoverage)}%`,
+        `review queue ${risk === "高" ? "P0" : risk === "中" ? "P1" : "P2"}`,
+      ],
+    },
+    vectorSummary: [
+      { label: "调用路径", value: `${base.flow.length} nodes / depth ${base.flow.length + 3}` },
+      { label: "参数依赖", value: `${4 + (seed % 9)} links` },
+      { label: "状态切换", value: `${3 + (seed % 7)} writes` },
+      { label: "事件主题", value: `${3 + (seed % 5)} topics` },
+    ],
     nodes,
     edges: nodes.slice(0, -1).map((node, index) => [node.id, nodes[index + 1].id]),
     hits,
